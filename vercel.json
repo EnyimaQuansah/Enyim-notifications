@@ -7,7 +7,7 @@
         "use": "@vercel/node"
       },
       {
-        "src": "polling-handler.js",
+        "src": "api/polling-handler.js",
         "use": "@vercel/node"
       }
     ],
@@ -21,8 +21,14 @@
         }
       },
       {
-        "src": "/polling-handler",
-        "dest": "/polling-handler.js"
+        "src": "/api/polling-handler",
+        "dest": "/api/polling-handler.js"
+      }
+    ],
+    "crons": [
+      {
+        "path": "/api/polling-handler",
+        "schedule": "*/0 10 * * *"  
       }
     ]
   }
