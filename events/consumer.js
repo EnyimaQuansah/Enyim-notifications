@@ -6,11 +6,13 @@ const User = require("../models/user");
 const { Client } = require('@elastic/elasticsearch');
 
 const esClient = new Client({
-  node: process.env.ELASTICSEARCH_URI,
+  node: process.env.ELASTICSEARCH_URI, // Your remote Elasticsearch URL
   auth: {
-    apiKey: process.env.ELASTICSEARCH_API_KEY 
+    apiKey: process.env.ELASTICSEARCH_API_KEY // Your API key from Elastic Cloud
   }
 });
+
+
 
 
 // Function to fetch the product quantity from Elasticsearch
@@ -61,26 +63,18 @@ const initConsumer = async () => {
       "product_events_for_notifications",
       "order_events_for_notifications",
       "auth_events",
-      "user_data_sync",
+      "user_data_sync", // New queue for user data synchronization
     ];
     await Promise.all(queues.map(queue => channel.assertQueue(queue, { durable: true })));
 
-    // Start polling queues
-    startPolling();
-  } catch (error) {
-    console.error("Error initializing RabbitMQ consumer:", error.message);
-  }
-};
-
-// Polling function
-const startPolling = () => {
-  // Poll every 5 seconds (adjust as needed)
-  setInterval(() => {
+    // Consume events from the respective queues
     consumeQueue("product_events_for_notifications", handleProductEvents);
     consumeQueue("order_events_for_notifications", handleOrderEvents);
     consumeQueue("auth_events", handleAuthEvents);
     consumeQueue("user_data_sync", syncUserData);
-  }, 5000); // Polling every 5 seconds
+  } catch (error) {
+    console.error("Error initializing RabbitMQ consumer:", error.message);
+  }
 };
 
 // Synchronize user data with MongoDB
@@ -98,27 +92,19 @@ const syncUserData = async (event) => {
 
 // Utility to consume a queue
 const consumeQueue = (queue, handler) => {
-  channel.get(queue, { noAck: false }, async (err, msg) => {
-    if (err) {
-      console.error(`Error fetching message from ${queue}:`, err);
-      return;
-    }
+  channel.consume(queue, async (msg) => {
+    const event = JSON.parse(msg.content.toString());
+    console.log(`Received event from ${queue}:`, event);
 
-    if (msg) {
-      const event = JSON.parse(msg.content.toString());
-      console.log(`Received event from ${queue}:`, event);
-
-      try {
-        await handler(event);
-        channel.ack(msg); // Acknowledge the message after successful handling
-      } catch (error) {
-        console.error(`Error handling event from ${queue}:`, error.message);
-        channel.nack(msg, false, false); // Reject the message if handling fails
-      }
+    try {
+      await handler(event);
+      channel.ack(msg);
+    } catch (error) {
+      console.error(`Error handling event from ${queue}:`, error.message);
+      channel.nack(msg, false, false);
     }
   });
 };
-
 
 // Fetch user details from MongoDB
 const fetchUserDetails = async (userId) => {
