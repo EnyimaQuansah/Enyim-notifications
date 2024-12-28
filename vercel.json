@@ -16,5 +16,10 @@
                 "Access-Control-Allow-Origin": "*"
             }
         }
-    ]
+    ],
+    "functions": {
+        "polling-handler": {
+            "schedule": "*/1 * * * *"  
+        }
+    }
 }
