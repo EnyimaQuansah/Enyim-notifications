@@ -61,18 +61,26 @@ const initConsumer = async () => {
       "product_events_for_notifications",
       "order_events_for_notifications",
       "auth_events",
-      "user_data_sync", // New queue for user data synchronization
+      "user_data_sync",
     ];
     await Promise.all(queues.map(queue => channel.assertQueue(queue, { durable: true })));
 
-    // Consume events from the respective queues
+    // Start polling queues
+    startPolling();
+  } catch (error) {
+    console.error("Error initializing RabbitMQ consumer:", error.message);
+  }
+};
+
+// Polling function
+const startPolling = () => {
+  // Poll every 5 seconds (adjust as needed)
+  setInterval(() => {
     consumeQueue("product_events_for_notifications", handleProductEvents);
     consumeQueue("order_events_for_notifications", handleOrderEvents);
     consumeQueue("auth_events", handleAuthEvents);
     consumeQueue("user_data_sync", syncUserData);
-  } catch (error) {
-    console.error("Error initializing RabbitMQ consumer:", error.message);
-  }
+  }, 5000); // Polling every 5 seconds
 };
 
 // Synchronize user data with MongoDB
@@ -90,19 +98,27 @@ const syncUserData = async (event) => {
 
 // Utility to consume a queue
 const consumeQueue = (queue, handler) => {
-  channel.consume(queue, async (msg) => {
-    const event = JSON.parse(msg.content.toString());
-    console.log(`Received event from ${queue}:`, event);
+  channel.get(queue, { noAck: false }, async (err, msg) => {
+    if (err) {
+      console.error(`Error fetching message from ${queue}:`, err);
+      return;
+    }
 
-    try {
-      await handler(event);
-      channel.ack(msg);
-    } catch (error) {
-      console.error(`Error handling event from ${queue}:`, error.message);
-      channel.nack(msg, false, false);
+    if (msg) {
+      const event = JSON.parse(msg.content.toString());
+      console.log(`Received event from ${queue}:`, event);
+
+      try {
+        await handler(event);
+        channel.ack(msg); // Acknowledge the message after successful handling
+      } catch (error) {
+        console.error(`Error handling event from ${queue}:`, error.message);
+        channel.nack(msg, false, false); // Reject the message if handling fails
+      }
     }
   });
 };
+
 
 // Fetch user details from MongoDB
 const fetchUserDetails = async (userId) => {
