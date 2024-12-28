@@ -13,6 +13,8 @@ const esClient = new Client({
 });
 
 
+
+
 // Function to fetch the product quantity from Elasticsearch
 const getProductQuantityFromES = async (title) => {
   try {
