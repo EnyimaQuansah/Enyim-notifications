@@ -2,24 +2,28 @@
     "version": 2,
     "name": "notifications_microservice",
     "builds": [
-        {
-            "src": "app.js",
-            "use": "@vercel/node"
-        }
+      {
+        "src": "app.js",
+        "use": "@vercel/node"
+      },
+      {
+        "src": "polling-handler.js",
+        "use": "@vercel/node"
+      }
     ],
     "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "/app.js",
-            "methods":["GET","POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-            "headers":{
-                "Access-Control-Allow-Origin": "*"
-            }
+      {
+        "src": "/(.*)",
+        "dest": "/app.js",
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "headers": {
+          "Access-Control-Allow-Origin": "*"
         }
-    ],
-    "functions": {
-        "polling-handler": {
-            "schedule": "*/1 * * * *"  
-        }
-    }
-}
+      },
+      {
+        "src": "/polling-handler",
+        "dest": "/polling-handler.js"
+      }
+    ]
+  }
+  
