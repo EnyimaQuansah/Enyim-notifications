@@ -12,10 +12,10 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("Failed to connect to MongoDB:", err.message));
 
+await initConsumer();
+
 // Routes
 app.use("/notifications", notificationRoutes);
 
-// Initialize RabbitMQ Consumers
-initConsumer();
 
 module.exports = app;
